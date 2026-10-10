@@ -1,0 +1,31 @@
+name: Release Action
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  update-major-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Update floating major version tag
+        run: |
+          RAW_TAG="${{ github.ref_name }}"
+          CLEAN_VER="${RAW_TAG#v}"
+          MAJOR_VER="${CLEAN_VER%%.*}"
+          MAJOR_TAG="v$MAJOR_VER"
+
+          echo "Updating major version tag: $MAJOR_TAG pointing to $RAW_TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -fa "$MAJOR_TAG" -m "Release $MAJOR_TAG"
+          git push origin "$MAJOR_TAG" --force

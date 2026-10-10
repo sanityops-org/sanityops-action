@@ -1,0 +1,23 @@
+# SanityOps Action - GitLab CI smoke test.
+#
+# Verifies that the prebuilt CLI installs and runs in a clean container, and that
+# every helper script compiles and its embedded copy is current. It does not run a
+# real inspection, which would require an LLM API key.
+stages:
+  - test
+
+variables:
+  SANITYOPS_INSTALL_URL: "https://downloads.sanityops.org/sanityops-cli"
+
+smoke-test:
+  stage: test
+  tags:
+    - "docker"
+  script:
+    - docker run --rm -v "$PWD":/workspace -w /workspace python:3.12 bash -c "
+        curl -fsSL ${SANITYOPS_INSTALL_URL}/install.sh | bash -s -- --system --yes &&
+        sanityops-cli --version &&
+        sanityops-cli --help &&
+        python3 -m unittest discover -s tests -t . &&
+        python3 scripts/render_gitlab_template.py --check &&
+        bash -n entrypoint.sh"

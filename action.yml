@@ -1,0 +1,103 @@
+name: 'SanityOps Defect Inspection'
+description: 'Static defect inspection of AI logic artifacts (System Prompts, Skills, Tool Schemas)'
+author: 'SanityOps Team'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  api-key:
+    description: 'API key for the LLM provider. Prefer passing this from a secret. Ignored when inspect_config.yaml has a complete model: section, which takes precedence over every LLM setting here.'
+    required: false
+  config-path:
+    description: 'Path to inspect_config.yaml, relative to the repository root'
+    required: false
+    default: '.sanityops/inspect_config.yaml'
+  check-level:
+    description: 'Inspection depth: L1 (fast), L2 (standard), or L3 (deep)'
+    required: false
+    default: 'L2'
+  provider:
+    description: 'LLM provider override (e.g. anthropic, openai). Ignored when inspect_config.yaml has a complete model: section, which takes precedence over every LLM setting here.'
+    required: false
+  model-id:
+    description: 'LLM model ID override. Ignored when inspect_config.yaml has a complete model: section, which takes precedence over every LLM setting here.'
+    required: false
+  base-url:
+    description: 'LLM API base URL override - the model endpoint, not the SanityOps dashboard. Ignored when inspect_config.yaml has a complete model: section, which takes precedence over every LLM setting here.'
+    required: false
+  verbose:
+    description: 'Enable verbose console diagnostics ("true" or "false")'
+    required: false
+    default: 'false'
+  skip-defect-check:
+    description: 'Analyse artifacts but skip the LLM defect check ("true" or "false")'
+    required: false
+    default: 'false'
+  timeout:
+    description: 'Execution timeout in seconds (default: 1800)'
+    required: false
+  token-budget:
+    description: 'Token budget for the analysis agent (default: 200000)'
+    required: false
+  github-token:
+    description: 'Token used to post the inspection report as a pull request comment'
+    required: false
+    default: '${{ github.token }}'
+  fail-on-defect:
+    description: 'Fail the step when any defect is found ("true" or "false", default soft gate)'
+    required: false
+    default: 'false'
+  block-on-p0:
+    description: 'Fail the step when a P0 (blocker) defect is found ("true" or "false")'
+    required: false
+    default: 'false'
+  command:
+    description: 'CLI subcommand to run (default: inspect)'
+    required: false
+    default: 'inspect'
+  server-api-key:
+    description: 'SanityOps dashboard API key. Setting this uploads scanned artifacts off the runner; leave empty to keep everything local.'
+    required: false
+  server-base-url:
+    description: 'SanityOps dashboard base URL (default: https://demo.sanityops.org)'
+    required: false
+
+outputs:
+  exit-code:
+    description: 'Quality gate exit code (0 = the configured gate passed)'
+  total-defects:
+    description: 'Total number of defects detected across all inspected artifacts'
+  p0-defects:
+    description: 'Number of P0 (Blocker) defects detected'
+  p1-defects:
+    description: 'Number of P1 (Major) defects detected'
+  p2-defects:
+    description: 'Number of P2 (Minor) defects detected'
+  gate-result:
+    description: 'Quality gate verdict: PASS or FAIL'
+  report-path:
+    description: 'File path of the generated markdown inspection report'
+  log-path:
+    description: 'File path of the copied CLI execution log'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    INPUT_API_KEY: ${{ inputs.api-key }}
+    INPUT_CONFIG_PATH: ${{ inputs.config-path }}
+    INPUT_CHECK_LEVEL: ${{ inputs.check-level }}
+    INPUT_PROVIDER: ${{ inputs.provider }}
+    INPUT_MODEL_ID: ${{ inputs.model-id }}
+    INPUT_BASE_URL: ${{ inputs.base-url }}
+    INPUT_VERBOSE: ${{ inputs.verbose }}
+    INPUT_SKIP_DEFECT_CHECK: ${{ inputs.skip-defect-check }}
+    INPUT_TIMEOUT: ${{ inputs.timeout }}
+    INPUT_TOKEN_BUDGET: ${{ inputs.token-budget }}
+    INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+    INPUT_FAIL_ON_DEFECT: ${{ inputs.fail-on-defect }}
+    INPUT_BLOCK_ON_P0: ${{ inputs.block-on-p0 }}
+    INPUT_COMMAND: ${{ inputs.command }}
+    INPUT_SERVER_API_KEY: ${{ inputs.server-api-key }}
+    INPUT_SERVER_BASE_URL: ${{ inputs.server-base-url }}

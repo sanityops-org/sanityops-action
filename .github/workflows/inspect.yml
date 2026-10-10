@@ -1,0 +1,110 @@
+name: SanityOps Inspection
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        type: string
+        required: false
+        default: '.sanityops/inspect_config.yaml'
+      check-level:
+        type: string
+        required: false
+        default: 'L2'
+      provider:
+        type: string
+        required: false
+        default: ''
+      model-id:
+        type: string
+        required: false
+        default: ''
+      base-url:
+        type: string
+        required: false
+        default: ''
+      block-on-p0:
+        type: string
+        required: false
+        default: 'false'
+      fail-on-defect:
+        type: string
+        required: false
+        default: 'false'
+      skip-defect-check:
+        type: string
+        required: false
+        default: 'false'
+      verbose:
+        type: string
+        required: false
+        default: 'false'
+      timeout:
+        type: string
+        required: false
+        default: ''
+      token-budget:
+        type: string
+        required: false
+        default: ''
+      server-base-url:
+        type: string
+        required: false
+        default: ''
+      artifact-retention-days:
+        type: number
+        required: false
+        default: 7
+    secrets:
+      llm-api-key:
+        required: true
+      server-api-key:
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout calling repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+
+      - name: Run SanityOps inspection
+        id: sanityops
+        uses: sanityops-org/sanityops-action@v1
+        with:
+          api-key: ${{ secrets.llm-api-key }}
+          config-path: ${{ inputs.config-path }}
+          check-level: ${{ inputs.check-level }}
+          provider: ${{ inputs.provider }}
+          model-id: ${{ inputs.model-id }}
+          base-url: ${{ inputs.base-url }}
+          block-on-p0: ${{ inputs.block-on-p0 }}
+          fail-on-defect: ${{ inputs.fail-on-defect }}
+          skip-defect-check: ${{ inputs.skip-defect-check }}
+          verbose: ${{ inputs.verbose }}
+          timeout: ${{ inputs.timeout }}
+          token-budget: ${{ inputs.token-budget }}
+          server-api-key: ${{ secrets.server-api-key }}
+          server-base-url: ${{ inputs.server-base-url }}
+
+      - name: Publish outputs
+        if: always()
+        run: |
+          echo "Gate result:   ${{ steps.sanityops.outputs.gate-result }}"
+          echo "Total defects: ${{ steps.sanityops.outputs.total-defects }}"
+          echo "P0 / P1 / P2:  ${{ steps.sanityops.outputs.p0-defects }} / ${{ steps.sanityops.outputs.p1-defects }} / ${{ steps.sanityops.outputs.p2-defects }}"
+
+      - name: Upload inspection report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: sanityops-inspection-report
+          path: |
+            .sanityops/results/
+            .sanityops/logs/
+          retention-days: ${{ inputs.artifact-retention-days }}
+          if-no-files-found: warn
